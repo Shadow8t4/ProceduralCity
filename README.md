@@ -4,3 +4,5 @@ A C++ engine for procedural city generation by manipulating .obj models and outp
 
 Use cmake file included to generate project.
 Usage: [executable] [template].obj output.obj [optional: -d for debugging output]
+
+testing.
