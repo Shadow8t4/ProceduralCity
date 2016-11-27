@@ -7,7 +7,11 @@
 #include <vector>
 #include "../include/CompFab.h"
 #include "../include/Mesh.h"
+#include <math.h>
 
+#define PI 3.14159265
+
+// A function to find the X and Y dimensions of the template obj
 void findLW(Mesh &m, double &l, double &w)
 {
     double minl, maxl, minw, maxw;
@@ -23,38 +27,99 @@ void findLW(Mesh &m, double &l, double &w)
         }
         if(m.v[i].m_y < minw)
         {
-            minw = m.v[i].m_x;
+            minw = m.v[i].m_y;
         }
         if(m.v[i].m_y > maxw)
         {
-            maxw = m.v[i].m_x;
+            maxw = m.v[i].m_y;
         }
     }
     l = maxl - minl;
     w = maxw - minw;
 }
 
+// Calculate translation matrices and output them as a vector of Vec3s.
+std::vector<CompFab::Vec3> createVec3d(int layers, double spacing, double length, double width)
+{
+    std::vector<CompFab::Vec3> *output = new std::vector<CompFab::Vec3>();
+    
+    double ls = length + spacing;
+    double ws = width + spacing;
+    
+    // Will be used later to determine the direction of the translation matrix.
+    // This is used to bypass needing to create a rotation matrix.
+    // Should consider doing so anyway to speed up process, use less memory, and add modularization.
+    double angle = 0.0;
+    
+    CompFab::Vec3 *temp = new CompFab::Vec3(-ls, -ws, 0);
+    
+    // Vec3 to hold our current translation matrix.
+    CompFab::Vec3 *trans = new CompFab::Vec3(0, spacing, 0);
+    
+    // cl for current layer.
+    for(int cl = 1; cl < layers; cl++)
+    {
+        // Constructor used to bypass needing to create a new operator override for multiplication.
+        // Should also consider doing so anyway to speed up process, use less memory, and add modularization.
+        *temp = CompFab::Vec3(-ls*cl, -ws*cl, 0);
+        
+        for(int c = 0; c < cl*8; c++)
+        {
+            angle = (c/(2*cl))*(0.5*PI);
+            *trans = CompFab::Vec3(ls*cos(angle), ws*sin(angle), 0);
+            *temp = *temp + *trans;
+            
+            output->push_back(*temp);
+        }
+    }
+    
+    return *output;
+}
+
 int main(int argc, char **argv)
 {
-    unsigned int num = 16; //number of voxels (e.g. 16x16x16)
     
+    // Error checking.
     if(argc < 3)
     {
         std::cout << "Usage: [executable] [template].obj output.obj [optional: -d for debugging output]" << std::endl;
         std::exit(1);
     }
+    
+    // TODO: Modularize these.
+    int layers = 10;
+    double spacing = 1.0;
+    
+    // Create Mesh object from file, output to manipulate from template Mesh.
     Mesh *test = new Mesh(argv[1], false);
     Mesh *output = new Mesh(test->v, test->t);
+    
     double l = 0, w = 0;
     double *length = &l, *width = &w;
+    
+    // Find the X and Y dimensions for the mesh. Assumes the mesh is facing upright.
     findLW(*test, *length, *width);
-    for(int i = 0; i < test->v.size(); i++)
+    
+    // Calculate the translation matrices needed.
+    std::vector<CompFab::Vec3> d = createVec3d(layers, spacing, *length, *width);
+    
+    // Duplicating template, will later be replaced with a much more robust procedural generation function.
+    for(int i = 0; i < d.size(); i++)
     {
-        output->v.push_back(*new CompFab::Vec3(test->v[i].m_x + *length + 1, test->v[i].m_y, test->v[i].m_z));
+        for(int j = 0; j < test->v.size(); j++)
+        {
+            output->v.push_back(CompFab::Vec3(test->v[j] + d[i]));
+        }
     }
-    for(int k = 0; k < test->t.size(); k++)
+    
+    // Copying needed triangle data.
+    for(int n = 1; n < pow((2*layers - 1), 2); n++)
     {
-        output->t.push_back(*new CompFab::Vec3i(test->t[k].m_x + test->v.size(), test->t[k].m_y + test->v.size(), test->t[k].m_z + test->v.size()));
+        int offset = test->v.size()*n;
+        for(int k = 0; k < test->t.size(); k++)
+        {
+            output->t.push_back(CompFab::Vec3i(test->t[k].m_x +offset, test->t[k].m_y + offset, test->t[k].m_z + offset));
+        }
     }
     
     // Debugging
