@@ -11,6 +11,7 @@
 
 #define PI 3.14159265
 
+// A function to find the X and Y dimensions of the template obj
 void findLW(Mesh &m, double &l, double &w)
 {
     double minl, maxl, minw, maxw;
@@ -37,72 +38,40 @@ void findLW(Mesh &m, double &l, double &w)
     w = maxw - minw;
 }
 
-// Calculate translation matrices and add them to the vector of translation matrices provided.
+// Calculate translation matrices and output them as a vector of Vec3s.
 std::vector<CompFab::Vec3> createVec3d(int layers, double spacing, double length, double width)
 {
     std::vector<CompFab::Vec3> *output = new std::vector<CompFab::Vec3>();
     
-    CompFab::Vec3 *temp = new CompFab::Vec3(-(length + spacing), -(width + spacing), 0);
+    double ls = length + spacing;
+    double ws = width + spacing;
+    
+    // Will be used later to determine the direction of the translation matrix.
+    // This is used to bypass needing to create a rotation matrix.
+    // Should consider doing so anyway to speed up process, use less memory, and add modularization.
+    double angle = 0.0;
+    
+    CompFab::Vec3 *temp = new CompFab::Vec3(-ls, -ws, 0);
+    
+    // Vec3 to hold our current translation matrix.
     CompFab::Vec3 *trans = new CompFab::Vec3(0, spacing, 0);
     
+    // cl for current layer.
     for(int cl = 1; cl < layers; cl++)
     {
-        *temp = CompFab::Vec3(-(length + spacing)*cl, -(width + spacing)*cl, 0);
+        // Constructor used to bypass needing to create a new operator override for multiplication.
+        // Should also consider doing so anyway to speed up process, use less memory, and add modularization.
+        *temp = CompFab::Vec3(-ls*cl, -ws*cl, 0);
         
         for(int c = 0; c < cl*8; c++)
         {
-            /*
-            double cosine = cos(((2*PI)/(cl*8))*c);
-            double sine = sin(((2*PI)/(cl*8))*c);
-            //
-            double xcoord = 1;
-            double angle = tan((2*PI)/(cl*8))*c;
-            double ycoord = 1;
-            if(cosine != 0)
-            {
-                ycoord = sine/cosine;
-            }
-            if(sine != 0)
-            {
-                xcoord = cosine/sine;
-            }
-            //
-            double x = cosine;//(sqrt(1 - (sine*sine)/2));
-            if(x > 0)
-            {
-                x = floor(x);
-            }
-            else
-            {
-                x = ceil(x);
-            }
-            double y = sine;//(sqrt(1-(cosine*cosine)/2));
-            if(y > 0)
-            {
-                y = floor(x);
-            }
-            else
-            {
-                y = ceil(x);
-            }
-            */
-            *trans = CompFab::Vec3(spacing*cos(floor((c/(2*cl)))*(0.5*PI)) + length*cos(floor((c/(2*cl)))*(0.5*PI)), spacing*sin(floor((c/(2*cl)))*(0.5*PI)) + width*sin(floor((c/(2*cl)))*(0.5*PI)), 0);
+            angle = (c/(2*cl))*(0.5*PI);
+            *trans = CompFab::Vec3(ls*cos(angle), ws*sin(angle), 0);
             *temp = *temp + *trans;
             
             output->push_back(*temp);
         }
     }
-    
-    /*
-    temp->push_back(CompFab::Vec3(length,0,0));
-    temp->push_back(CompFab::Vec3(length,width,0));
-    temp->push_back(CompFab::Vec3(0,width,0));
-    temp->push_back(CompFab::Vec3(-length,width,0));
-    temp->push_back(CompFab::Vec3(-length,0,0));
-    temp->push_back(CompFab::Vec3(-length,-width,0));
-    temp->push_back(CompFab::Vec3(0,-width,0));
-    temp->push_back(CompFab::Vec3(length,-width,0));
-    */
     
     return *output;
 }
@@ -117,20 +86,21 @@ int main(int argc, char **argv)
         std::exit(1);
     }
     
-    // Modularize this later.
+    // TODO: Modularize these.
+    int layers = 10;
     double spacing = 1.0;
     
     // Create Mesh object from file, output to manipulate from template Mesh.
     Mesh *test = new Mesh(argv[1], false);
     Mesh *output = new Mesh(test->v, test->t);
     
-    int layers = 10;
     double l = 0, w = 0;
     double *length = &l, *width = &w;
     
-    // Find dimensions for the mesh. Assumes the mesh is facing upright.
+    // Find the X and Y dimensions for the mesh. Assumes the mesh is facing upright.
     findLW(*test, *length, *width);
     
+    // Calculate the translation matrices needed.
     std::vector<CompFab::Vec3> d = createVec3d(layers, spacing, *length, *width);
     
     // Duplicating template, will later be replaced with a much more robust procedural generation function.
@@ -143,11 +113,12 @@ int main(int argc, char **argv)
     }
     
     // Copying needed triangle data.
-    for(int n = 1; n < (2*layers - 1)*(2*layers - 1); n++)
+    for(int n = 1; n < pow((2*layers - 1), 2); n++)
     {
+        int offset = test->v.size()*n;
         for(int k = 0; k < test->t.size(); k++)
         {
-            output->t.push_back(CompFab::Vec3i(test->t[k].m_x + test->v.size()*n, test->t[k].m_y + test->v.size()*n, test->t[k].m_z + test->v.size()*n));
+            output->t.push_back(CompFab::Vec3i(test->t[k].m_x +offset, test->t[k].m_y + offset, test->t[k].m_z + offset));
         }
     }
     
