@@ -117,9 +117,20 @@ CompFab::Vec3i CompFab::operator+(const Vec3i &v1, const Vec3i &v2)
     return v3i;
 }
 
+//Matrix multiplication
+CompFab::Vec3 CompFab::mmult(const Vec3& v1, const Vec3& v2)
+{
+    return Vec3(v1.m_x*v2.m_x, v1.m_y*v2.m_y, v1.m_z*v2.m_z);
+}
+
+//Scalar multiplication
+CompFab::Vec3 CompFab::smult(double s, const Vec3 & v)
+{
+    return mmult(CompFab::Vec3(s,s,s), v);
+}
 
 //Cross Product
-Vec3 CompFab::operator%(const Vec3 &v1, const Vec3 &v2)
+CompFab::Vec3 CompFab::operator%(const Vec3 &v1, const Vec3 &v2)
 {
     Vec3 v3;
     v3[0] = v1[1]*v2[2] - v1[2]*v2[1];

@@ -109,6 +109,12 @@ namespace CompFab
     
     Vec3i operator+(const Vec3i & v1, const Vec3i & v2);
     
+    //Matrix multiplication
+    Vec3 mmult(const Vec3 & v1, const Vec3 & v2);
+    
+    //Scalar multiplication
+    Vec3 smult(double s, const Vec3 & v);
+    
     //Cross Product
     Vec3 operator%(const Vec3 &v1, const Vec3 &v2);
     

@@ -55,7 +55,14 @@ std::vector<CompFab::Vec3> createVec3d(std::vector<CompFab::Vec3> &t, int layers
     
     // Vec3 to hold our current translation matrix.
     CompFab::Vec3 *trans = new CompFab::Vec3(0, spacing, 0);
-    *output = t;
+    
+    //Vec3 to hold our current height multiplier.
+    CompFab::Vec3 *mult = new CompFab::Vec3(1,1,1);
+    
+    for(int i = 0; i < t.size(); i++)
+    {
+        output->push_back(mmult(*mult, t[i]));
+    }
     
     // cl for current layer.
     for(int cl = 1; cl < layers; cl++)
@@ -63,6 +70,8 @@ std::vector<CompFab::Vec3> createVec3d(std::vector<CompFab::Vec3> &t, int layers
         // Constructor used to bypass needing to create a new operator override for multiplication.
         // Should also consider doing so anyway to speed up process, use less memory, and add modularization.
         *temp = CompFab::Vec3(-ls*cl, -ws*cl, 0);
+        mult->m_z = 1.0 - (cl*1.0)/layers;
+        
         
         for(int c = 0; c < cl*8; c++)
         {
@@ -71,7 +80,7 @@ std::vector<CompFab::Vec3> createVec3d(std::vector<CompFab::Vec3> &t, int layers
             *temp += *trans;
             for(int j = 0; j < t.size(); j++)
             {
-                output->push_back(t[j] + *temp);
+                output->push_back(mmult(*mult, t[j]) + *temp);
             }
         }
     }
@@ -106,8 +115,8 @@ int main(int argc, char **argv)
     }
     
     // TODO: Modularize these.
-    int layers = 5;
-    double spacing = 1;
+    int layers = 10;
+    double spacing = 0.5;
     
     // Create Mesh object from file, output to manipulate from template Mesh.
     Mesh *test = new Mesh(argv[1], false);
