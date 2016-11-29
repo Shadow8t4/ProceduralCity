@@ -39,7 +39,7 @@ void findLW(Mesh &m, double &l, double &w)
 }
 
 // Calculate translation matrices and output them as a vector of Vec3s.
-std::vector<CompFab::Vec3> createVec3d(int layers, double spacing, double length, double width)
+std::vector<CompFab::Vec3> createVec3d(std::vector<CompFab::Vec3> &t, int layers, double spacing, double length, double width)
 {
     std::vector<CompFab::Vec3> *output = new std::vector<CompFab::Vec3>();
     
@@ -55,6 +55,7 @@ std::vector<CompFab::Vec3> createVec3d(int layers, double spacing, double length
     
     // Vec3 to hold our current translation matrix.
     CompFab::Vec3 *trans = new CompFab::Vec3(0, spacing, 0);
+    *output = t;
     
     // cl for current layer.
     for(int cl = 1; cl < layers; cl++)
@@ -67,9 +68,27 @@ std::vector<CompFab::Vec3> createVec3d(int layers, double spacing, double length
         {
             angle = (c/(2*cl))*(0.5*PI);
             *trans = CompFab::Vec3(ls*cos(angle), ws*sin(angle), 0);
-            *temp = *temp + *trans;
-            
-            output->push_back(*temp);
+            *temp += *trans;
+            for(int j = 0; j < t.size(); j++)
+            {
+                output->push_back(t[j] + *temp);
+            }
+        }
+    }
+    
+    return *output;
+}
+std::vector<CompFab::Vec3i> createVec3id(std::vector<CompFab::Vec3i> &t, std::vector<CompFab::Vec3> &v, int layers)
+{
+    std::vector<CompFab::Vec3i> *output = new std::vector<CompFab::Vec3i>();
+    *output = t;
+    
+    for(int n = 1; n < pow((2*layers - 1), 2); n++)
+    {
+        CompFab::Vec3i *offset = new CompFab::Vec3i(v.size()*n);
+        for(int k = 0; k < t.size(); k++)
+        {
+            output->push_back(t[k] + *offset);
         }
     }
     
@@ -87,12 +106,11 @@ int main(int argc, char **argv)
     }
     
     // TODO: Modularize these.
-    int layers = 10;
-    double spacing = 1.0;
+    int layers = 5;
+    double spacing = 1;
     
     // Create Mesh object from file, output to manipulate from template Mesh.
     Mesh *test = new Mesh(argv[1], false);
-    Mesh *output = new Mesh(test->v, test->t);
     
     double l = 0, w = 0;
     double *length = &l, *width = &w;
@@ -100,27 +118,14 @@ int main(int argc, char **argv)
     // Find the X and Y dimensions for the mesh. Assumes the mesh is facing upright.
     findLW(*test, *length, *width);
     
-    // Calculate the translation matrices needed.
-    std::vector<CompFab::Vec3> d = createVec3d(layers, spacing, *length, *width);
-    
-    // Duplicating template, will later be replaced with a much more robust procedural generation function.
-    for(int i = 0; i < d.size(); i++)
-    {
-        for(int j = 0; j < test->v.size(); j++)
-        {
-            output->v.push_back(CompFab::Vec3(test->v[j] + d[i]));
-        }
-    }
+    // Calculate the translation matrices needed and apply them.
+    std::vector<CompFab::Vec3> vv = createVec3d(test->v, layers, spacing, *length, *width);
     
     // Copying needed triangle data.
-    for(int n = 1; n < pow((2*layers - 1), 2); n++)
-    {
-        int offset = test->v.size()*n;
-        for(int k = 0; k < test->t.size(); k++)
-        {
-            output->t.push_back(CompFab::Vec3i(test->t[k].m_x +offset, test->t[k].m_y + offset, test->t[k].m_z + offset));
-        }
-    }
+    std::vector<CompFab::Vec3i> tt = createVec3id(test->t, test->v, layers);
+    
+    // Using contructor to create new output Mesh.
+    Mesh *output = new Mesh(vv, tt);
     
     // Debugging
     if(argc > 3)
@@ -130,8 +135,11 @@ int main(int argc, char **argv)
             for(int j = 0; j < output->v.size(); j++)
             {
                 std::cout << output->v[j].m_x << " " << output->v[j].m_y << " " << output->v[j].m_z << std::endl;
-                std::cout << output->t[j].m_x << " " << output->t[j].m_y << " " << output->t[j].m_z << std::endl;
-                std::cout << std::endl;
+            }
+            std::cout << std::endl;
+            for(int k = 0; k < output->t.size(); k++)
+            {
+                std::cout << output->t[k].m_x << " " << output->t[k].m_y << " " << output->t[k].m_z << std::endl;
             }
         }
         else
