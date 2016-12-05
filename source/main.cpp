@@ -76,7 +76,6 @@ std::vector<CompFab::Vec3> createVec3d(std::vector<CompFab::Vec3> &t, int layers
     CompFab::Vec3 *temp = new CompFab::Vec3(-ls, -ws, 0);
     
     // Vec3 to hold our current translation matrix.
-<<<<<<< HEAD
     CompFab::Vec3 *trans = new CompFab::Vec3(ls, ws, 0);
     
     //Vec3 to hold our current height multiplication materx.
@@ -87,11 +86,10 @@ std::vector<CompFab::Vec3> createVec3d(std::vector<CompFab::Vec3> &t, int layers
     {
         output->push_back(mmult(*mult, t[i]));
     }
-=======
-    CompFab::Vec3 *trans = new CompFab::Vec3(0, spacing, 0); 
 
     CompFab::Vec3 *coord = new CompFab::Vec3(0.5,0.5,0);
->>>>>>> master
+    
+    PerlinNoise *p = new PerlinNoise();
     
     // cl for current layer.
     for(int cl = 1; cl < layers; cl++)
@@ -99,16 +97,17 @@ std::vector<CompFab::Vec3> createVec3d(std::vector<CompFab::Vec3> &t, int layers
         // Constructor used to re-initialize temp.
         *temp = CompFab::Vec3(-ls*cl, -ws*cl, 0);
         
-        // Used to change the multiplciation matrix per layer.
-        mult->m_z = 1.0/(cl +1);
-        
-        
         for(int c = 0; c < cl*8; c++)
         {
             angle = (c/(2*cl))*(0.5*PI);
             *trans = CompFab::Vec3(ls*cos(angle), ws*sin(angle), 0);
-<<<<<<< HEAD
             *temp += *trans;
+        
+            *coord = *coord + mmult(*trans, CompFab::Vec3((1/(layers*2.0-1)/2.0), (1/(layers*2.0-1)/2.0), 0));
+            
+            // Used to change the multiplciation matrix per layer.
+            mult->m_z = jerfunc(coord->m_x, coord->m_y, *p);
+            
             for(int j = 0; j < t.size(); j++)
             {
                 output->push_back(mmult(*mult, t[j]) + *temp);
@@ -129,16 +128,6 @@ std::vector<CompFab::Vec3i> createVec3id(std::vector<CompFab::Vec3i> &t, std::ve
         for(int k = 0; k < t.size(); k++)
         {
             output->push_back(t[k] + *offset);
-=======
-            *temp = *temp + *trans;
-            
-            output->push_back(*temp);
-
-            *coord = *coord + mmult(trans, Vec3(1/(layers*2-1)/2),1/(layers*2-1)/2,0);
-
-
-            *temp=mmult(temp,Vec3(1,1,n));
->>>>>>> master
         }
     }
     
@@ -163,7 +152,6 @@ int main(int argc, char **argv)
     // Debugging
     if(argc > 3)
     {
-<<<<<<< HEAD
         if(strcmp(argv[3], "-g") == 0 || strcmp(argv[3], "-d") == 0)
         {
             // TODO: Modularize these.
@@ -191,10 +179,6 @@ int main(int argc, char **argv)
         
         if(strcmp(argv[argc - 1], "-d") == 0)
         {
-=======
-      
-       // {
->>>>>>> master
             for(int j = 0; j < output->v.size(); j++)
             {
                 std::cout << output->v[j].m_x << " " << output->v[j].m_y << " " << output->v[j].m_z << std::endl;
