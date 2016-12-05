@@ -7,11 +7,35 @@
 #include <vector>
 #include "../include/CompFab.h"
 #include "../include/Mesh.h"
+#include "../include/ppm.h"
+#include "../include/PerlinNoise.h"
+
 #include <math.h>
 
 #define PI 3.14159265
 
-// A function to find the X and Y dimensions of the template obj
+
+double distanceA2B(double ax, double ay, double bx, double by){
+  return sqrt((bx-ax)*(bx-ax) + (by-ay)*(by-ay));
+}
+
+double jerfunc(double x, double y, PerlinNoise pnoise){
+  double n = 0;
+  double m = 0;
+
+  //perlin noise
+  n = 20 * pnoise.noise(x,y,0.8);
+  n = n - floor(n);
+
+  //Central distrobution
+  //distance from point to center
+  m = distanceA2B(x,y,0.5,0.5);
+
+  return (m*0.15)+(n*0.85);
+
+}
+
+//A function to find the X and Y dimensions of the template obj
 void findLW(Mesh &m, double &l, double &w)
 {
     double minl, maxl, minw, maxw;
@@ -54,7 +78,9 @@ std::vector<CompFab::Vec3> createVec3d(int layers, double spacing, double length
     CompFab::Vec3 *temp = new CompFab::Vec3(-ls, -ws, 0);
     
     // Vec3 to hold our current translation matrix.
-    CompFab::Vec3 *trans = new CompFab::Vec3(0, spacing, 0);
+    CompFab::Vec3 *trans = new CompFab::Vec3(0, spacing, 0); 
+
+    CompFab::Vec3 *coord = new CompFab::Vec3(0.5,0.5,0);
     
     // cl for current layer.
     for(int cl = 1; cl < layers; cl++)
@@ -70,6 +96,11 @@ std::vector<CompFab::Vec3> createVec3d(int layers, double spacing, double length
             *temp = *temp + *trans;
             
             output->push_back(*temp);
+
+            *coord = *coord + mmult(trans, Vec3(1/(layers*2-1)/2),1/(layers*2-1)/2,0);
+
+
+            *temp=mmult(temp,Vec3(1,1,n));
         }
     }
     
@@ -125,8 +156,8 @@ int main(int argc, char **argv)
     // Debugging
     if(argc > 3)
     {
-        if(strcmp(argv[3], "-d") == 0)
-        {
+      
+       // {
             for(int j = 0; j < output->v.size(); j++)
             {
                 std::cout << output->v[j].m_x << " " << output->v[j].m_y << " " << output->v[j].m_z << std::endl;
