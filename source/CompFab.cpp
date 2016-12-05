@@ -48,6 +48,14 @@ CompFab::Vec3iStruct::Vec3iStruct(int x, int y, int z)
     m_z = z;
 }
 
+CompFab::Vec3iStruct::Vec3iStruct(int i)
+{
+    m_x = i;
+    m_y = i;
+    m_z = i;
+}
+
+
 CompFab::Vec2fStruct::Vec2fStruct()
 {
     m_x = m_y = 0.0;
@@ -99,9 +107,30 @@ CompFab::Vec3 CompFab::operator+(const Vec3 &v1, const Vec3 &v2)
     return v3;
 }
 
+CompFab::Vec3i CompFab::operator+(const Vec3i &v1, const Vec3i &v2)
+{
+    Vec3i v3i;
+    v3i[0] = v1[0] + v2[0];
+    v3i[1] = v1[1] + v2[1];
+    v3i[2] = v1[2] + v2[2];
+    
+    return v3i;
+}
+
+//Matrix multiplication
+CompFab::Vec3 CompFab::mmult(const Vec3& v1, const Vec3& v2)
+{
+    return Vec3(v1.m_x*v2.m_x, v1.m_y*v2.m_y, v1.m_z*v2.m_z);
+}
+
+//Scalar multiplication
+CompFab::Vec3 CompFab::smult(double s, const Vec3 & v)
+{
+    return mmult(CompFab::Vec3(s,s,s), v);
+}
 
 //Cross Product
-Vec3 CompFab::operator%(const Vec3 &v1, const Vec3 &v2)
+CompFab::Vec3 CompFab::operator%(const Vec3 &v1, const Vec3 &v2)
 {
     Vec3 v3;
     v3[0] = v1[1]*v2[2] - v1[2]*v2[1];
